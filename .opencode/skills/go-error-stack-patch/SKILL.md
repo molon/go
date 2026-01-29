@@ -12,7 +12,7 @@ Patches Go's `errors` and `fmt` packages to capture stack traces automatically.
 
 ## Reference Implementation
 
-Full implementation: https://github.com/golang/go/compare/go1.25.6...molon:go:go1.25.6-errstack0.0.1?expand=1
+Full implementation: https://github.com/golang/go/compare/go1.25.6...molon:go:go1.25.6-errstack0.0.2?expand=1
 
 **Note**: The reference implementation includes a `.opencode/skills` directory which should be ignored. Only the Go source code modifications, Dockerfile, GitHub Actions workflow, and VS Code settings are relevant.
 
@@ -24,6 +24,7 @@ These files are completely new and can be copied directly from the commit:
 |------|-------------|
 | `.vscode/settings.json` | VS Code settings to disable gopls when editing Go source |
 | `Dockerfile` | Multi-stage build for patched Go |
+| `install.sh` | Build script that compiles Go and outputs environment setup commands |
 | `src/errors/stack.go` | Stack types (`StackFrame`, `StackTrace`, `Stack`) and capture logic |
 | `src/errors/stack_test.go` | Test suite for stack trace functionality |
 
@@ -106,6 +107,21 @@ Go requires a recent version (typically N-1) to build from source. Use the lates
 | Go 1.23.x | `golang:1.22.x-bookworm` (use latest 1.22.x) |
 
 ## Build
+
+### Using install.sh (Recommended)
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+The script will build Go and output environment setup commands:
+```bash
+export GOROOT=/path/to/molon/go
+export PATH=$GOROOT/bin:$PATH
+```
+
+### Manual Build
 
 ```bash
 export GOROOT_BOOTSTRAP=/usr/local/go  # Go 1.24+ for building Go 1.25.x
