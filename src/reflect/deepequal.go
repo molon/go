@@ -7,9 +7,13 @@
 package reflect
 
 import (
+	"errors"
 	"internal/bytealg"
 	"unsafe"
 )
+
+// errorsStackPtrType is cached to avoid repeated calls to TypeFor.
+var errorsStackPtrType = TypeFor[*errors.Stack]()
 
 // During deepValueEqual, must keep track of checks that are
 // in progress. The comparison algorithm assumes that all
@@ -126,7 +130,17 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 		}
 		return deepValueEqual(v1.Elem(), v2.Elem(), visited)
 	case Struct:
+		t := v1.Type()
 		for i, n := 0, v1.NumField(); i < n; i++ {
+			// Skip embedded *errors.Stack fields during comparison.
+			// Stack traces are unique per error creation point and should not
+			// affect deep equality. This only applies to embedded (anonymous)
+			// fields - named fields of type *errors.Stack are still compared.
+			// See errors.Stack documentation for more details.
+			sf := t.Field(i)
+			if sf.Anonymous && sf.Type == errorsStackPtrType {
+				continue
+			}
 			if !deepValueEqual(v1.Field(i), v2.Field(i), visited) {
 				return false
 			}

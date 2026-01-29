@@ -1,0 +1,16 @@
+{
+    "go.useLanguageServer": false,
+    "go.lintOnSave": "off",
+    "go.vetOnSave": "off",
+    "go.formatTool": "default",
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {},
+    "go.toolsManagement.autoUpdate": false,
+    "files.exclude": {
+        "**/pkg/bootstrap/**": true
+    },
+    "go.testOnSave": false,
+    "go.coverOnSave": false,
+    "go.languageServerFlags": [],
+    "go.enableCodeLens": {}
+}

@@ -16,6 +16,8 @@ import (
 // between each string.
 //
 // A non-nil error returned by Join implements the Unwrap() []error method.
+// If any of the joined errors is missing a stack trace, Join captures
+// a stack trace at the point of the call.
 func Join(errs ...error) error {
 	n := 0
 	for _, err := range errs {
@@ -34,11 +36,16 @@ func Join(errs ...error) error {
 			e.errs = append(e.errs, err)
 		}
 	}
+	// Capture stack if any branch is missing stack
+	if ShouldCaptureStack(e) {
+		e.Stack = CaptureStack(1)
+	}
 	return e
 }
 
 type joinError struct {
 	errs []error
+	*Stack
 }
 
 func (e *joinError) Error() string {

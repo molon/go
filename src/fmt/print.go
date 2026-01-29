@@ -5,6 +5,7 @@
 package fmt
 
 import (
+	"errors"
 	"internal/fmtsort"
 	"io"
 	"os"
@@ -664,6 +665,11 @@ func (p *pp) handleMethods(verb rune) (handled bool) {
 			case error:
 				handled = true
 				defer p.catchPanic(p.arg, verb, "Error")
+				// For %+s, format error with stack trace
+				if verb == 's' && p.fmt.plus {
+					p.fmtErrorWithStack(v)
+					return
+				}
 				p.fmtString(v.Error(), verb)
 				return
 
@@ -1220,4 +1226,76 @@ func (p *pp) doPrintln(a []any) {
 		p.printArg(arg, 'v')
 	}
 	p.buf.writeByte('\n')
+}
+
+// fmtErrorWithStack formats an error with its stack trace for %+v.
+// Format:
+//   1. Print error message (with indentation based on depth)
+//   2. Print stack trace (if any) immediately after message
+//   3. If has children, print "~~~" separator then recurse
+func (p *pp) fmtErrorWithStack(err error) {
+	p.fmtErrorWithStackImpl(err, 0)
+}
+
+func (p *pp) fmtErrorWithStackImpl(err error, depth int) {
+	if err == nil || depth > 100 {
+		return
+	}
+
+	// Write indentation based on depth
+	indent := ""
+	for i := 0; i < depth; i++ {
+		indent += "  "
+	}
+
+	// Print error message with indent
+	p.buf.writeString(indent)
+	p.buf.writeString(err.Error())
+
+	// Check for errors.StackTracer interface and print stack immediately after message
+	if st, ok := err.(errors.StackTracer); ok && st.HasStack() {
+		p.fmtStackTraceWithIndent(st.StackTrace(), indent)
+	}
+	p.buf.writeByte('\n')
+
+	// Check for Unwrap() []error (multi-error)
+	if u, ok := err.(interface{ Unwrap() []error }); ok {
+		errs := u.Unwrap()
+		if len(errs) > 0 {
+			childIndent := indent + "  "
+			p.buf.writeString(indent)
+			p.buf.writeString("~~~\n")
+			for i, e := range errs {
+				if i > 0 {
+					p.buf.writeString(childIndent)
+					p.buf.writeString("---\n")
+				}
+				p.fmtErrorWithStackImpl(e, depth+1)
+			}
+		}
+		return
+	}
+
+	// Check for Unwrap() error (single wrapped error)
+	if u, ok := err.(interface{ Unwrap() error }); ok {
+		inner := u.Unwrap()
+		if inner != nil {
+			p.buf.writeString(indent)
+			p.buf.writeString("~~~\n")
+			p.fmtErrorWithStackImpl(inner, depth+1)
+		}
+	}
+}
+
+// fmtStackTrace formats a stack trace.
+func (p *pp) fmtStackTrace(frames errors.StackTrace) {
+	p.fmtStackTraceWithIndent(frames, "")
+}
+
+// fmtStackTraceWithIndent formats a stack trace with indentation.
+func (p *pp) fmtStackTraceWithIndent(frames errors.StackTrace, indent string) {
+	frames.Format(func(s string) {
+		p.buf.writeString(indent)
+		p.buf.writeString(s)
+	})
 }

@@ -27,10 +27,19 @@ func Errorf(format string, a ...any) error {
 	var err error
 	switch len(p.wrappedErrs) {
 	case 0:
-		err = errors.New(s)
+		e := errors.New(s)
+		// Remove the extra frame from fmt.Errorf
+		if st, ok := e.(interface{ RemoveStackFrames(int) }); ok {
+			st.RemoveStackFrames(1)
+		}
+		err = e
 	case 1:
 		w := &wrapError{msg: s}
 		w.err, _ = a[p.wrappedErrs[0]].(error)
+		// Capture stack if inner error needs stack
+		if errors.ShouldCaptureStack(w) {
+			w.Stack = errors.CaptureStack(1)
+		}
 		err = w
 	default:
 		if p.reordered {
@@ -45,7 +54,12 @@ func Errorf(format string, a ...any) error {
 				errs = append(errs, e)
 			}
 		}
-		err = &wrapErrors{s, errs}
+		we := &wrapErrors{msg: s, errs: errs}
+		// Capture stack if any branch is missing stack
+		if errors.ShouldCaptureStack(we) {
+			we.Stack = errors.CaptureStack(1)
+		}
+		err = we
 	}
 	p.free()
 	return err
@@ -54,6 +68,7 @@ func Errorf(format string, a ...any) error {
 type wrapError struct {
 	msg string
 	err error
+	*errors.Stack
 }
 
 func (e *wrapError) Error() string {
@@ -67,6 +82,7 @@ func (e *wrapError) Unwrap() error {
 type wrapErrors struct {
 	msg  string
 	errs []error
+	*errors.Stack
 }
 
 func (e *wrapErrors) Error() string {

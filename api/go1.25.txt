@@ -14,6 +14,20 @@ pkg debug/elf, const PT_RISCV_ATTRIBUTES = 1879048195 #72843
 pkg debug/elf, const PT_RISCV_ATTRIBUTES ProgType #72843
 pkg debug/elf, const SHT_RISCV_ATTRIBUTES = 1879048195 #72843
 pkg debug/elf, const SHT_RISCV_ATTRIBUTES SectionType #72843
+pkg errors, func CaptureStack(int) *Stack #0
+pkg errors, method (*Stack) HasStack() bool #0
+pkg errors, method (*Stack) RemoveStackFrames(int) #0
+pkg errors, method (*Stack) StackTrace() StackTrace #0
+pkg errors, method (StackFrame) PC() uintptr #0
+pkg errors, method (StackTrace) Format(func(string)) #0
+pkg errors, type Stack struct #0
+pkg errors, type StackFrame uintptr #0
+pkg errors, type StackTrace []StackFrame #0
+pkg errors, type StackTracer interface { HasStack, StackTrace } #0
+pkg errors, type StackTracer interface, HasStack() bool #0
+pkg errors, type StackTracer interface, StackTrace() StackTrace #0
+pkg errors, var FormatStackTrace func(StackTrace, func(string)) #0
+pkg errors, var ShouldCaptureStack func(error) bool #0
 pkg go/ast, const FilterFuncDuplicates //deprecated #73088
 pkg go/ast, const FilterImportDuplicates //deprecated #73088
 pkg go/ast, const FilterUnassociatedComments //deprecated #73088

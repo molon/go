@@ -12,7 +12,6 @@
 package main
 
 import (
-	"errors"
 	"unsafe"
 )
 
@@ -304,7 +303,12 @@ func F0() *S { return &S{1, 2, 3} }
 
 var LitSNoArgs = F0()
 
-var myError = errors.New("mine")
+// errors.New now has init funcs due to stack trace support, so we use a simple error type instead
+type simpleError string
+
+func (e simpleError) Error() string { return string(e) }
+
+var myError error = simpleError("mine")
 
 func gopherize(s string) string { return "gopher gopher gopher " + s }
 
